@@ -426,7 +426,7 @@ import AppKit
     private func startStatusTimer() {
         statusTimer?.invalidate()
         statusTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.renderStatus() }
+            Task { @MainActor [weak self] in self?.renderStatus() }
         }
     }
     func windowWillClose(_ notification: Notification) {

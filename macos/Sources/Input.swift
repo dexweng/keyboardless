@@ -63,7 +63,7 @@ import ApplicationServices
         tap=newTap;source=nil;chosen=shortcut
         if let newTap { source=CFMachPortCreateRunLoopSource(kCFAllocatorDefault,newTap,0);CFRunLoopAddSource(CFRunLoopGetMain(),source,.commonModes);CGEvent.tapEnable(tap:newTap,enable:true) }
         watchdog?.invalidate()
-        watchdog=Timer.scheduledTimer(withTimeInterval:0.25,repeats:true){[weak self] _ in Task { @MainActor in
+        watchdog=Timer.scheduledTimer(withTimeInterval:0.25,repeats:true){[weak self] _ in Task { @MainActor [weak self] in
             guard let self,let chosen=self.chosen else{return}
             if let tap=self.tap,!CGEvent.tapIsEnabled(tap:tap) {self.reset();CGEvent.tapEnable(tap:tap,enable:true)}
             if self.active && !CGEventSource.keyState(.combinedSessionState,key:chosen.keyCode) {self.reset()}

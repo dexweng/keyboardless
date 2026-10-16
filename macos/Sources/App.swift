@@ -151,7 +151,7 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
     }
     func requestMicrophone() {
         if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in Task { @MainActor in self?.refreshPermissions() } }
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in Task { @MainActor [weak self] in self?.refreshPermissions() } }
         } else {
             NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
         }
@@ -255,7 +255,7 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
                           buttons: [("取消", { [weak self] in self?.cancel() })], recordingHint:recordingMode == .toggle ? "再按停止" : nil)
             statusItem.button?.title = " ●"
             timer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
                     guard let self, let recorder = self.recorder, self.state.phase == .recording else { return }
                     recorder.updateMeters(); self.panel.updateRecording(seconds: recorder.currentTime, level: pow(10, Double(recorder.averagePower(forChannel: 0)) / 25))
                     if recorder.currentTime >= 90 { self.stop() }

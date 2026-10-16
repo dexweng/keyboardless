@@ -4,7 +4,10 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: macos-14
+    strategy:
+      matrix:
+        os: [macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,3 +24,5 @@ jobs:
       - run: bash macos/scripts/check-app.sh
       - run: python3 scripts/test-release.py
       - run: python3 scripts/release.py
+      - run: /usr/bin/python3 scripts/build-standalone.py
+      - run: /usr/bin/python3 scripts/check-standalone.py

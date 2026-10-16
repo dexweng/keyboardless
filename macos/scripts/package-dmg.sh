@@ -8,7 +8,7 @@ if [ -n "${KEYBOARDLESS_NOTARY_PROFILE:-}" ]; then
   : "${KEYBOARDLESS_SIGN_IDENTITY:?Set a Developer ID Application identity}"
   case "$KEYBOARDLESS_SIGN_IDENTITY" in 'Developer ID Application:'*) ;; *) echo 'Developer ID Application identity required'; exit 1;; esac
   codesign --verify --deep --strict "$APP"
-  codesign -dv "$APP" 2>&1 | /usr/bin/grep -q 'Authority=Developer ID Application:'
+  codesign -dv --verbose=2 "$APP" 2>&1 | /usr/bin/grep 'Authority=Developer ID Application:' >/dev/null
   ditto -c -k --keepParent "$APP" .local/standalone/notarize.zip
   xcrun notarytool submit .local/standalone/notarize.zip --keychain-profile "$KEYBOARDLESS_NOTARY_PROFILE" --wait
   xcrun stapler staple "$APP"

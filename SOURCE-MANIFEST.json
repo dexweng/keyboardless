@@ -32,7 +32,7 @@
   "macos/scripts/build.sh": "a0b767c1418d7f388f36796a51030d765dd2e551907761259e14956c14dbd497",
   "macos/scripts/check-app.sh": "c517bcb82cb98e13a08fba4334ac7614b9070232c61672a74a1075690dbab299",
   "macos/scripts/icon.sh": "bfd4e02268ff6db354a8eb0194f0c270a42327258dc1bfa92dbd68320a3165d8",
-  "macos/scripts/package-dmg.sh": "376d02f79d6998435fa170adeaa75a1d7d89960b01294be118c852541380ba79",
+  "macos/scripts/package-dmg.sh": "c8b392d0970efda0586d5ccda1f0d6b1f2363bb0747d515b805d402733704995",
   "macos/scripts/test.sh": "c37eaf12461afbbba27d063a1e33748879a89e83b6cbd3eef1f9786f84c21c09",
   "package-lock.json": "41640d580dc1b900bbeea747d1b23bb8f32bfbd42e9ef8c281420bc3b4395e97",
   "package.json": "9ad2000c36c28eac3eed99ca9261368034b14f4b87948798cac0ca43971cb2bf",

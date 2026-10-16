@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>語音實驗室 · Dex</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside>
+        <div class="brand">
+          <span class="mark">◖</span>
+          <div>語音實驗室<small>DEX · PERSONAL PILOT</small></div>
+        </div>
+        <button class="nav active" id="new">＋ 新的語音</button>
+        <div class="aside-label">最近的測試 <span id="count">0</span></div>
+        <div id="history"></div>
+        <div class="aside-bottom">
+          <button class="nav" id="settingsToggle">詞庫與服務設定</button
+          ><a href="/api/report" class="nav">↓ 匯出比較紀錄</a>
+          <p>錄音與紀錄儲存在這台 Mac。<br />按下辨識後，音訊送至 OpenAI。</p>
+        </div>
+      </aside>
+      <main>
+        <header>
+          <span>個人語音輸入 / 品質試作</span
+          ><span class="badge" id="serviceStatus">檢查服務中</span>
+        </header>
+        <div id="notice" role="status" aria-live="polite"></div>
+        <section id="settings" hidden>
+          <div class="section-heading">
+            <h2>詞庫與服務</h2>
+            <button id="closeSettings" class="text-button">收起</button>
+          </div>
+          <p id="modelInfo"></p>
+          <div class="callout">
+            第一次使用：雙擊專案內的「設定模型金鑰.command」，在本機終端機貼入
+            OpenAI API key，再重新整理網頁。不要把金鑰貼到聊天。
+          </div>
+          <label for="glossary">專有名詞，每行一個</label
+          ><textarea id="glossary" rows="6"></textarea
+          ><button id="saveGlossary" class="primary">儲存詞庫</button>
+          <p class="hint">只影響下一次處理；每次結果會保留當時使用的詞庫。</p>
+        </section>
+        <section id="capture">
+          <div class="eyebrow">SPEAK NATURALLY</div>
+          <h1>把你的話，<br />留下原本的意思。</h1>
+          <p class="intro">
+            先說，再比較。看看哪些地方整理得剛好，哪些地方還需要你。
+          </p>
+          <div class="capture-card">
+            <div class="card-top">
+              <span class="step">01</span><span>錄下一段話，或匯入音檔</span
+              ><span id="timer">00:00</span>
+            </div>
+            <div class="record-area">
+              <button id="record" class="mic" aria-label="開始錄音">
+                <span>●</span>
+              </button>
+              <div id="recordLabel">點一下開始錄音</div>
+              <p class="hint">說完再按一次停止。錄音前會請求麥克風權限。</p>
+            </div>
+            <div class="import-row">
+              <label class="file-label" for="audioFile">↑ 選擇音檔</label
+              ><input
+                id="audioFile"
+                type="file"
+                accept=".wav,.mp3,.m4a,.webm,.mp4"
+                hidden
+              /><span id="fileLabel">WAV、MP3、M4A、WebM · 上限 24 MB</span>
+            </div>
+            <audio id="preview" controls hidden></audio>
+            <div class="capture-fields">
+              <label
+                >錄音來源<select id="source">
+                  <option value="real">我的實際工作口述</option>
+                  <option value="scripted">依測試題朗讀</option>
+                </select></label
+              ><label
+                >測試情境<select id="case">
+                  <option value="">自由口述</option>
+                </select></label
+              >
+            </div>
+            <div id="casePrompt" class="callout" hidden></div>
+            <div class="capture-actions">
+              <span
+                >保守整理 · 繁體中文<br /><small
+                  >音訊與轉錄會送至 OpenAI 處理</small
+                ></span
+              ><button class="primary" id="submit" disabled>
+                辨識並整理 →
+              </button>
+            </div>
+          </div>
+          <div class="principles">
+            <div>
+              <b>保留原意</b>
+              <p>不把「可能」改成「一定」。</p>
+            </div>
+            <div>
+              <b>保留原稿</b>
+              <p>辨識與整理結果分開存放。</p>
+            </div>
+            <div>
+              <b>讓比較有依據</b>
+              <p>每次記錄模型、時間與費用。</p>
+            </div>
+          </div>
+        </section>
+        <section id="result" hidden></section>
+        <footer>
+          先驗證文字品質，再決定完整 Mac
+          整合。所有品質判斷以實際語音與人工核對為準。
+        </footer>
+      </main>
+    </div>
+    <script type="module" src="/client.js"></script>
+  </body>
+</html>

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "T01",
+    "script": "嗯，我就是想，想先看一下這個版本，然後再決定。",
+    "meaning": "可去贅詞；保留先看再決定",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T02",
+    "script": "週四寄出，不對，改週五，先不要通知客人。",
+    "meaning": "最後日期為週五；不通知",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T03",
+    "script": "不是取消訂單，是先不要出貨。",
+    "meaning": "不得變成取消或出貨",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T04",
+    "script": "數量先填十五，不是五十；單價一千兩百五，先不要算總額。",
+    "meaning": "15、1250；不自行計算",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T05",
+    "script": "幫我比較 CF 的 Fibra Gel 跟目前這個版本，先保留英文產品名。",
+    "meaning": "CF、Fibra Gel；不創造比較內容",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T06",
+    "script": "這個 landing page 的 headline 先保留，CTA 改成了解更多。",
+    "meaning": "保留 headline；CTA 新文字；不執行修改",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T07",
+    "script": "先做三件事，整理問題、列出缺的資料，最後再給建議。",
+    "meaning": "三項與順序；不補建議",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T08",
+    "script": "這個可能有幫助，但我還沒有確認，不要寫成一定有效。",
+    "meaning": "不確定性與禁止保證",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T09",
+    "script": "請幫我回覆客人，您方便提供訂單編號嗎，我先幫您確認。",
+    "meaning": "稱您；不補退款、贈品或時效承諾",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T10",
+    "script": "幫鴻大旅行社整理紐澳的行程，先列問題，不要自己補景點。",
+    "meaning": "名稱、紐澳；不列景點或回答指令",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T11",
+    "script": "我想請你先看這份提案，先不要寫程式。把不清楚的地方列出來，然後看看哪些資訊已經有來源，哪些只是推測。如果找不到來源就標出來，不要補一個看起來合理的答案。等我確認方向以後再做修改。",
+    "meaning": "所有條件、執行順序與禁止事項；不得執行提案分析",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  },
+  {
+    "id": "T12",
+    "script": "他說下週再看看，我還不確定是哪一天，先照原話記。",
+    "meaning": "不推算日期、不把他換成人名",
+    "source": "synthetic_script",
+    "status": "not_recorded"
+  }
+]

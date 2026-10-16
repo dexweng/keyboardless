@@ -1,0 +1,23 @@
+name: Check
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: brew install ffmpeg
+      - run: npm ci
+      - run: npm run check
+      - run: bash macos/scripts/test.sh
+      - run: bash macos/scripts/build.sh
+      - run: bash macos/scripts/check-app.sh
+      - run: python3 scripts/test-release.py
+      - run: python3 scripts/release.py

@@ -1,0 +1,31 @@
+{
+  "name": "keyboardless",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "scripts": {
+    "dev": "node --import tsx src/server.ts --port 3018",
+    "start": "node --import tsx src/server.ts --port 3018",
+    "build": "tsc --noEmit && esbuild src/client.ts --bundle --format=esm --outfile=public/client.js",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check": "npm run build && npm test"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "multer": "2.4.0",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.5",
+    "@types/multer": "2.0.0",
+    "@types/node": "24.10.0",
+    "esbuild": "0.25.11",
+    "prettier": "3.6.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "license": "MIT"
+}

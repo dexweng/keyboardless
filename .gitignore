@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.local/
+public/client.js
+playwright-report/
+test-results/
+.DS_Store
+
+macos/build/
+
+__pycache__/

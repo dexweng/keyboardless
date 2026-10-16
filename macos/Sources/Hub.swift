@@ -1,11 +1,11 @@
 import AppKit
 
 @MainActor private enum HubUI {
-    static let accent = NSColor(calibratedRed: 0.45, green: 0.58, blue: 1, alpha: 1)
+    static let accent = Brand.paper
     static func label(_ text: String, size: CGFloat = 14, muted: Bool = false, weight: NSFont.Weight = .regular) -> NSTextField {
         let view = NSTextField(wrappingLabelWithString: text)
         view.font = .systemFont(ofSize: size, weight: weight)
-        view.textColor = muted ? .secondaryLabelColor : .labelColor
+        view.textColor = muted ? Brand.muted : Brand.paper
         return view
     }
     static func stack(_ views: [NSView] = [], horizontal: Bool = false, spacing: CGFloat = 16) -> NSStackView {
@@ -15,8 +15,9 @@ import AppKit
     }
     static func card(_ views: [NSView]) -> NSView {
         let card = NSView(); card.wantsLayer = true
-        card.layer?.backgroundColor = NSColor(calibratedWhite: 0.22, alpha: 1).cgColor
-        card.layer?.cornerRadius = 22
+        card.layer?.backgroundColor = Brand.card.cgColor
+        card.layer?.cornerRadius = 16
+        card.layer?.borderColor = Brand.line.cgColor; card.layer?.borderWidth = 0.7
         let stack = stack(views); stack.translatesAutoresizingMaskIntoConstraints = false; card.addSubview(stack)
         for view in views { view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
         NSLayoutConstraint.activate([
@@ -32,7 +33,7 @@ import AppKit
     }
     static func editor(_ label: String, editable: Bool, height: CGFloat) -> (NSScrollView, NSTextView) {
         let scroll = NSScrollView(); scroll.hasVerticalScroller = true; scroll.borderType = .noBorder
-        scroll.drawsBackground = true; scroll.backgroundColor = NSColor(calibratedWhite: 0.11, alpha: 1)
+        scroll.drawsBackground = true; scroll.backgroundColor = Brand.ink
         scroll.wantsLayer = true; scroll.layer?.cornerRadius = 10
         let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 600, height: height))
         text.isEditable = editable; text.isSelectable = true; text.isRichText = false
@@ -151,15 +152,20 @@ import AppKit
                    styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         title = "keyboardless"; titleVisibility = .hidden; titlebarAppearsTransparent = true
         isReleasedWhenClosed = false; minSize = NSSize(width: 900, height: 620)
-        appearance = NSAppearance(named: .darkAqua); backgroundColor = NSColor(calibratedWhite: 0.13, alpha: 1)
+        appearance = NSAppearance(named: .darkAqua); backgroundColor = Brand.ink
         delegate = self; setFrameAutosaveName("DexVoiceHub"); center()
         let root = NSView(); contentView = root
-        let side = NSView(); side.wantsLayer = true; side.layer?.backgroundColor = NSColor(calibratedWhite: 0.18, alpha: 1).cgColor
-        side.layer?.cornerRadius = 22
-        let brand = HubUI.label("keyboardless", size: 23, weight: .bold)
+        let side = ContourSidebar(); side.wantsLayer = true; side.layer?.backgroundColor = Brand.surface.cgColor
+        side.layer?.cornerRadius = 18
+        side.layer?.borderWidth = 0.7; side.layer?.borderColor = Brand.line.cgColor
+        let brand = HubUI.label("keyboardless", size: 18, weight: .semibold)
         let brandDetail = HubUI.label("VOICE TO WORDS", size: 10, muted: true)
-        let sideStack = HubUI.stack([brand, brandDetail], spacing: 10)
-        sideStack.setCustomSpacing(32, after: brandDetail)
+        let logo = NSImageView(); logo.image = Brand.logo; logo.imageScaling = .scaleProportionallyUpOrDown
+        logo.setAccessibilityLabel("keyboardless 標誌")
+        logo.widthAnchor.constraint(equalToConstant: 42).isActive = true; logo.heightAnchor.constraint(equalToConstant: 42).isActive = true
+        let brandRow = HubUI.stack([logo, HubUI.stack([brand, brandDetail], spacing: 4)], horizontal: true, spacing: 10)
+        let sideStack = HubUI.stack([brandRow], spacing: 10)
+        sideStack.setCustomSpacing(30, after: brandRow)
         for item in Page.allCases {
             let button = ActionButton(item.title) { [weak self] in self?.navigate(item) }
             button.image = NSImage(systemSymbolName: item.symbol, accessibilityDescription: nil)
@@ -364,7 +370,7 @@ import AppKit
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("record")); col.resizingMask = .autoresizingMask
         table.addTableColumn(col); table.headerView = nil; table.dataSource = self; table.delegate = self
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle; table.selectionHighlightStyle = .regular
-        table.backgroundColor = NSColor(calibratedWhite: 0.13, alpha: 1); table.intercellSpacing = NSSize(width: 0, height: 6)
+        table.backgroundColor = Brand.ink; table.intercellSpacing = NSSize(width: 0, height: 6)
         table.setAccessibilityLabel("歷史紀錄列表")
         let list = NSScrollView(); list.documentView = table; list.hasVerticalScroller = true; list.borderType = .noBorder
         list.heightAnchor.constraint(equalToConstant: 220).isActive = true; HubUI.full(list, in: page)

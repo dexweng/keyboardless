@@ -1,5 +1,29 @@
 import AppKit
 
+@MainActor enum Brand {
+    static let ink = NSColor(calibratedRed: 0.055, green: 0.055, blue: 0.052, alpha: 1)
+    static let surface = NSColor(calibratedRed: 0.095, green: 0.095, blue: 0.090, alpha: 1)
+    static let card = NSColor(calibratedRed: 0.13, green: 0.13, blue: 0.123, alpha: 1)
+    static let paper = NSColor(calibratedRed: 0.95, green: 0.94, blue: 0.90, alpha: 1)
+    static let muted = NSColor(calibratedRed: 0.68, green: 0.68, blue: 0.64, alpha: 1)
+    static let line = NSColor(calibratedWhite: 0.32, alpha: 1)
+    static var logo: NSImage? { Bundle.main.url(forResource: "keyboardless-logo", withExtension: "png").flatMap(NSImage.init(contentsOf:)) }
+}
+
+@MainActor final class ContourSidebar: NSView {
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        Brand.paper.withAlphaComponent(0.08).setStroke()
+        for index in 0..<9 {
+            let inset = CGFloat(index) * 9
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: -35 + inset, y: 75))
+            path.curve(to: NSPoint(x: 230, y: 170 + inset), controlPoint1: NSPoint(x: 80 + inset, y: 85), controlPoint2: NSPoint(x: 30 + inset, y: 240))
+            path.lineWidth = 0.7; path.stroke()
+        }
+    }
+}
+
 @MainActor final class ActionButton: NSButton {
     var actionBlock: (() -> Void)?
     var navigationStyle = false
@@ -9,9 +33,13 @@ import AppKit
     }
     override func draw(_ dirtyRect: NSRect) {
         let selected = navigationStyle && state == .on
-        let fill = primaryStyle ? NSColor(white: 0.93, alpha: 1) : NSColor(white: isHighlighted || selected ? 0.25 : 0.20, alpha: navigationStyle && !selected && !isHighlighted ? 0 : 1)
-        fill.setFill(); NSBezierPath(roundedRect: bounds, xRadius: navigationStyle ? 10 : 17, yRadius: navigationStyle ? 10 : 17).fill()
-        let color: NSColor = !isEnabled ? .disabledControlTextColor : primaryStyle ? .black : selected ? .white : NSColor(white: 0.84, alpha: 1)
+        let fill = primaryStyle || selected ? Brand.paper : (navigationStyle && !isHighlighted ? .clear : isHighlighted ? Brand.line : Brand.surface)
+        fill.setFill(); NSBezierPath(roundedRect: bounds, xRadius: 10, yRadius: 10).fill()
+        if !navigationStyle && !primaryStyle {
+            Brand.line.setStroke(); let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 10, yRadius: 10)
+            outline.lineWidth = 0.7; outline.stroke()
+        }
+        let color: NSColor = !isEnabled ? Brand.muted.withAlphaComponent(0.5) : primaryStyle || selected ? Brand.ink : Brand.paper
         let textFont = font ?? .systemFont(ofSize: 13, weight: .medium)
         let textSize = (title as NSString).size(withAttributes: [.font: textFont])
         var x: CGFloat = alignment == .left ? 14 : (bounds.width - textSize.width - (image == nil ? 0 : 26)) / 2
@@ -42,7 +70,7 @@ import AppKit
 @MainActor final class Waveform: NSView {
     var level: Double = 0 { didSet { needsDisplay = true } }
     override func draw(_ dirtyRect: NSRect) {
-        NSColor(calibratedRed: 0.92, green: 0.92, blue: 0.94, alpha: 1).setFill()
+        Brand.paper.setFill()
         let count = 17, spacing: CGFloat = 5
         let start = (bounds.width - CGFloat(count) * spacing) / 2
         for index in 0..<count {
@@ -74,11 +102,13 @@ import AppKit
         isOpaque = false; backgroundColor = .clear; hasShadow = true
         appearance = NSAppearance(named: .darkAqua)
         let root = NSView(); root.wantsLayer = true
-        root.layer?.backgroundColor = NSColor(calibratedWhite: 0.12, alpha: 0.97).cgColor
+        root.layer?.backgroundColor = Brand.ink.withAlphaComponent(0.97).cgColor
         root.layer?.cornerRadius = 24; root.layer?.borderWidth = 1
-        root.layer?.borderColor = NSColor(white: 0.28, alpha: 0.6).cgColor; contentView = root
-        heading.font = .systemFont(ofSize: 14, weight: .medium); heading.textColor = .white
-        detail.font = .systemFont(ofSize: 12); detail.textColor = .secondaryLabelColor
+        root.layer?.borderColor = Brand.line.cgColor; contentView = root
+        heading.font = .systemFont(ofSize: 14, weight: .medium); heading.textColor = Brand.paper
+        detail.font = .systemFont(ofSize: 12); detail.textColor = Brand.muted
+        time.textColor = Brand.paper
+        recordingHint.textColor = Brand.muted
         time.font = .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
         compact.orientation = .horizontal; compact.alignment = .centerY; compact.spacing = 10
         expanded.orientation = .vertical; expanded.alignment = .leading; expanded.spacing = 10

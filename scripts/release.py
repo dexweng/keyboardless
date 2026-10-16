@@ -5,9 +5,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 FILES = ['README.md','LICENSE','PRIVACY.md','SECURITY.md','CONTRIBUTING.md','THIRD_PARTY_NOTICES.md',
          'package.json','package-lock.json','tsconfig.json','.gitignore','.env.example',
          'start.command','start-mac.command','設定模型金鑰.command',
-         'docs/release.md','macos/Resources/recording-start.wav']
+         'docs/release.md','macos/Resources/recording-start.wav','macos/Resources/keyboardless-logo.png','macos/Resources/keyboardless.icns']
 PATTERNS = ['src/*.ts','tests/*.ts','public/*.html','public/*.css','fixtures/cases.json',
-            'macos/Sources/*.swift','macos/Keychain/*.swift','macos/Tests/*.swift','macos/Tests/*.mjs',
+            'macos/AudioPrepare/*.swift','macos/entitlements/*.plist','macos/Sources/*.swift','macos/Keychain/*.swift','macos/Tests/*.swift','macos/Tests/*.mjs',
             'macos/scripts/*.sh','scripts/*.py','.github/workflows/*.yml']
 SECRET = re.compile(rb'(?:sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,})')
 PERSONAL = re.compile(rb'/Users/[A-Za-z0-9._-]+/', re.I)

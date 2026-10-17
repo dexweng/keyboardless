@@ -4,6 +4,16 @@ import { stat, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 const exec = promisify(execFile);
 export async function prepareAudio(input: string, output: string) {
+  if (process.env.KEYBOARDLESS_AUDIO_HELPER) {
+    let duration: number;
+    try {
+      const result = await exec(process.env.KEYBOARDLESS_AUDIO_HELPER, [input, output], { timeout: 60000, maxBuffer: 65536 });
+      duration = Number(JSON.parse(result.stdout).duration);
+    } catch { throw new Error("音檔無法解碼。請使用有效的 WAV、MP3 或 M4A 音檔。"); }
+    if (!Number.isFinite(duration) || duration <= 0 || (await stat(output)).size > 25000000)
+      throw new Error("音訊長度或大小超出限制，請縮短後再試。");
+    return { duration, audioHash: createHash("sha256").update(await readFile(input)).digest("hex") };
+  }
   try {
     await exec(
       process.env.FFMPEG_PATH || "ffmpeg",

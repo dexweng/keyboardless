@@ -52,12 +52,8 @@ export class Store {
     } catch {
       return {
         glossary: [
-          "Typeless",
-          "CF",
-          "CHRIS FARRELL",
-          "Fibra Gel",
-          "鴻大旅行社",
-          "OpenSpec",
+          "keyboardless",
+          "OpenAI",
         ],
       };
     }

@@ -9,7 +9,9 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate {
 final class PilotAPI {
     let base: URL
     private let session: URLSession
-    init(base: URL = URL(string: "http://127.0.0.1:3018")!) {
+    private let expectedInstance: String?
+    init(base: URL = URL(string: "http://127.0.0.1:3018")!, expectedInstance: String? = nil) {
+        self.expectedInstance = expectedInstance
         self.base = base
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 15
@@ -38,7 +40,10 @@ final class PilotAPI {
     func config() async throws -> PilotConfig {
         let cfg = try JSONDecoder().decode(PilotConfig.self, from: await call("api/config"))
         guard cfg.app == "dex-voice-pilot", cfg.nativeProtocol == 1 else {
-            throw PilotError.message("3018 的服務版本不相容，請停止舊服務後重新啟動 keyboardless。")
+            throw PilotError.message("本機服務版本不相容，請停止舊服務後重新啟動 keyboardless。")
+        }
+        if let expectedInstance, cfg.instanceID != expectedInstance {
+            throw PilotError.message("本機埠已被其他服務占用，請退出其他 keyboardless 版本後重試。")
         }
         return cfg
     }

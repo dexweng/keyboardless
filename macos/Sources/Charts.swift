@@ -21,7 +21,7 @@ import AppKit
             for (i,p) in points.suffix(364).enumerated() {
                 let rect=NSRect(x:CGFloat(i/7)*(size+gap),y:CGFloat(i%7)*(size+gap)+22,width:size,height:size)
                 let strength=p.value==0 ? 0 : 0.25+0.75*sqrt(p.value/maximum)
-                NSColor(calibratedRed:0.30+0.40*strength,green:0.32+0.47*strength,blue:0.36+0.60*strength,alpha:1).setFill()
+                NSColor(calibratedRed:0.22+0.73*strength,green:0.22+0.72*strength,blue:0.21+0.69*strength,alpha:1).setFill()
                 NSBezierPath(roundedRect:rect,xRadius:3,yRadius:3).fill();hitAreas.append((rect,p.date+" · "+p.detail))
             }
             text(points.first?.date ?? "",at:NSPoint(x:0,y:0));text(points.last?.date ?? "",at:NSPoint(x:max(0,bounds.width-95),y:0))
@@ -32,7 +32,7 @@ import AppKit
             for (i,p) in points.enumerated(){
                 let barHeight=max(2,height*p.value/maximum)
                 let rect=NSRect(x:CGFloat(i)*(width+gap),y:height-barHeight+20,width:width,height:barHeight)
-                (p.value>0 ? NSColor(calibratedRed:0.67,green:0.75,blue:0.96,alpha:1) : NSColor(calibratedWhite:0.35,alpha:1)).setFill()
+                (p.value>0 ? Brand.paper : NSColor(calibratedWhite:0.35,alpha:1)).setFill()
                 NSBezierPath(roundedRect:rect,xRadius:min(4,width/2),yRadius:3).fill()
                 hitAreas.append((NSRect(x:rect.minX,y:0,width:width,height:bounds.height),p.date+" · "+p.detail))
             }
@@ -41,6 +41,6 @@ import AppKit
         }
         for (rect,_) in hitAreas {addToolTip(rect,owner:self,userData:nil)}
     }
-    private func text(_ value:String,at point:NSPoint){(value as NSString).draw(at:point,withAttributes:[.font:NSFont.systemFont(ofSize:11),.foregroundColor:NSColor.secondaryLabelColor])}
+    private func text(_ value:String,at point:NSPoint){(value as NSString).draw(at:point,withAttributes:[.font:NSFont.systemFont(ofSize:11),.foregroundColor:Brand.muted])}
     func view(_ view:NSView,stringForToolTip tag:NSView.ToolTipTag,point:NSPoint,userData:UnsafeMutableRawPointer?) -> String {hitAreas.first{$0.0.contains(point)}?.1 ?? ""}
 }

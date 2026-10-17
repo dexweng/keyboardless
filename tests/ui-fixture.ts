@@ -7,6 +7,8 @@ const root = await mkdtemp(join(tmpdir(), "pilot-ui-"));
 const { app } = await createApp({
   dataRoot: root,
   port: 31340,
+  envPath: join(root, "no.env"),
+  secrets: { async read() { return ""; }, async write() {}, async remove() {} },
   provider: {
     async transcribe() {
       return {

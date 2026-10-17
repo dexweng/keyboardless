@@ -24,6 +24,9 @@ import Foundation
         guard CommandLine.arguments.count > 1 else { return }
         let api = PilotAPI(base: URL(string: CommandLine.arguments[1])!)
         let cfg = try await api.config(); require(cfg.configured, "configured")
+        let foreign = PilotAPI(base: api.base, expectedInstance: "different-launch")
+        do { _ = try await foreign.config(); fatalError("foreign service accepted") }
+        catch PilotError.message(let message) { require(message.contains("占用"), "foreign service is rejected") }
         require(cfg.models?.cleanup == "fixture-cleanup", "model names decoded")
         do { _ = try await api.insights(); fatalError("old service accepted as insights") } catch PilotError.message(let message) { require(message.contains("新版本機服務"), "old service has useful insights message") }
         do { _ = try await api.usage(); fatalError("old service accepted as usage") } catch PilotError.message(let message) { require(message.contains("新版本機服務"), "old service has useful usage message") }

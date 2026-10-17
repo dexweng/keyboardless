@@ -118,9 +118,9 @@ struct RuntimeConfig: Decodable {
         }
         refreshPermissions(); menuNeedsUpdate(menu)
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(sleeping), name: NSWorkspace.willSleepNotification, object: nil)
-        if !UserDefaults.standard.bool(forKey: "onboarded") {
-            settings.show(); UserDefaults.standard.set(true, forKey: "onboarded")
-        }
+        // A deliberate launch must remain visible after the first use, too.
+        settings.show(page: .home)
+        UserDefaults.standard.set(true, forKey: "onboarded")
         Task { await connect(startIfNeeded: true) }
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { refreshPermissions(); settings.show(); return true }
@@ -158,13 +158,18 @@ struct RuntimeConfig: Decodable {
     @objc func sleeping() { hotkey.reset(); diagnosticTask?.cancel(); testNextInput = false; cancel(); target = nil }
     func refreshPermissions() {
         guard settings != nil else { return }
+        let accessibilityAllowed = AXIsProcessTrusted()
+        if accessibilityAllowed && !shortcutRegistered && state.phase == .idle && !hotkey.suspended {
+            shortcutRegistered = hotkey.register(shortcut)
+        }
         let mic: String
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: mic = "麥克風已允許"
         case .denied, .restricted: mic = "麥克風未允許，請至系統設定開啟"
         default: mic = "尚未允許麥克風"
         }
-        settings.permissions.stringValue = "\(mic)\n\(AXIsProcessTrusted() ? "輔助使用已允許" : "輔助使用未允許（仍可手動複製）")\n\(shortcutRegistered ? "快捷鍵已註冊" : "快捷鍵被占用，請換一組")"
+        let shortcutStatus = shortcutRegistered ? "快捷鍵已註冊" : accessibilityAllowed ? "快捷鍵無法註冊，請換一組" : "快捷鍵尚未就緒，請允許輔助使用後重新檢查"
+        settings.permissions.stringValue = "\(mic)\n\(accessibilityAllowed ? "輔助使用已允許" : "輔助使用未允許（仍可手動複製）")\n\(shortcutStatus)"
         settings.renderStatus()
     }
     func requestMicrophone() {

@@ -61,7 +61,7 @@ for executable,sources,frameworks in [
         run(*args,*sources,'-o',binary); slices.append(binary)
     run('lipo','-create',*slices,'-output',mac/executable)
 info={'CFBundleExecutable':'DexVoice','CFBundleIdentifier':'local.dex.voice','CFBundleName':'keyboardless',
-      'CFBundleDisplayName':'keyboardless','CFBundlePackageType':'APPL','CFBundleVersion':'2',
+      'CFBundleDisplayName':'keyboardless','CFBundlePackageType':'APPL','CFBundleVersion':'3',
       'CFBundleShortVersionString':VERSION,'CFBundleIconFile':'keyboardless.icns','LSMinimumSystemVersion':'14.0',
       'LSUIElement':True,'NSMicrophoneUsageDescription':'使用快捷鍵錄下你的口述，交由你設定的 OpenAI 帳戶辨識。',
       'NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True}}

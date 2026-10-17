@@ -15,10 +15,11 @@ export DEX_BUILD_APP="$APP" DEX_PROJECT_ROOT="$PROJECT_ROOT" DEX_NODE_PATH="$(co
 import json, os, plistlib
 app=os.environ['DEX_BUILD_APP']
 with open(app+'/Contents/Info.plist','wb') as f:
-    plistlib.dump({'CFBundleExecutable':'DexVoice','CFBundleIdentifier':'local.dex.voice','CFBundleName':'keyboardless','CFBundleDisplayName':'keyboardless','CFBundlePackageType':'APPL','CFBundleVersion':'1','CFBundleShortVersionString':'0.5.0','LSMinimumSystemVersion':'14.0','LSUIElement':True,'NSMicrophoneUsageDescription':'使用快捷鍵開始錄下你的口述，交給已設定的語音服務辨識。','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True}},f)
+    plistlib.dump({'CFBundleExecutable':'DexVoice','CFBundleIdentifier':'local.dex.voice','CFBundleName':'keyboardless','CFBundleDisplayName':'keyboardless','CFBundlePackageType':'APPL','CFBundleVersion':'1','CFBundleShortVersionString':json.load(open('package.json'))['version'],'CFBundleIconFile':'keyboardless.icns','LSMinimumSystemVersion':'14.0','LSUIElement':True,'NSMicrophoneUsageDescription':'使用快捷鍵開始錄下你的口述，交給已設定的語音服務辨識。','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True}},f)
 with open(app+'/Contents/Resources/runtime.json','w') as f:
     json.dump({'projectRoot':os.environ['DEX_PROJECT_ROOT'],'nodePath':os.environ['DEX_NODE_PATH']},f)
 PY
+cp macos/Resources/keyboardless-logo.png macos/Resources/keyboardless.icns "$APP/Contents/Resources/"
 cp macos/Resources/recording-start.wav "$APP/Contents/Resources/recording-start.wav"
 codesign --force --sign - --identifier local.dex.voice "$APP"
 codesign --verify --strict "$APP"

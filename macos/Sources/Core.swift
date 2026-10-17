@@ -47,6 +47,7 @@ struct FocusEvidence {
     var mayInsert: Bool { trusted && sameApp && sameElement && sameSelection && !secure }
 }
 struct PilotConfig: Decodable {
+    let instanceID: String?
     let app: String?
     let nativeProtocol: Int?
     let token: String

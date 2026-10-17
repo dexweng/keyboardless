@@ -1,5 +1,6 @@
 import type { Run, Settings } from "./model.ts";
 interface Config {
+  nativeAudio?: boolean;
   token: string;
   configured: boolean;
   provider: string;
@@ -103,9 +104,10 @@ async function toggleRecord() {
       throw new Error("這個瀏覽器無法錄音。請改用 Chrome，或直接匯入音檔。");
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const chunks: BlobPart[] = [];
-    const mime = ["audio/webm;codecs=opus", "audio/mp4"].find((t) =>
+    const mime = (config.nativeAudio ? ["audio/mp4"] : ["audio/webm;codecs=opus", "audio/mp4"]).find((t) =>
       MediaRecorder.isTypeSupported(t),
     );
+    if (config.nativeAudio && !mime) throw new Error("請使用 App 快捷鍵錄音，或匯入 WAV、MP3、M4A。此瀏覽器無法錄製相容格式。");
     recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
     const current = recorder;
     let bytes = 0;
@@ -422,6 +424,10 @@ action("saveGlossary", async () => {
 window.addEventListener("beforeunload", () => releaseMic());
 async function init() {
   config = await api<Config>("/config");
+  if (config.nativeAudio) {
+    $<HTMLInputElement>("audioFile").accept = ".wav,.mp3,.m4a,.mp4";
+    $("fileLabel").textContent = "WAV、MP3、M4A · 上限 24 MB";
+  }
   cases = await api<Case[]>("/cases");
   $("serviceStatus").textContent = config.configured
     ? "OpenAI · 已設定"

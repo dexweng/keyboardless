@@ -13,6 +13,7 @@ import {
 import { resolve, join, extname } from "node:path";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 import { Store } from "./store.ts";
 import { prepareAudio } from "./audio.ts";
 import { OpenAIProvider, type Provider } from "./provider.ts";
@@ -26,7 +27,7 @@ export async function createApp(
   options: { dataRoot?: string; provider?: Provider; port?: number; secrets?: SecretStore; envPath?: string } = {},
 ) {
   const port = options.port ?? 3018;
-  const store = new Store(options.dataRoot ?? join(root, ".local"));
+  const store = new Store(options.dataRoot ?? process.env.KEYBOARDLESS_DATA_ROOT ?? join(root, ".local"));
   await store.init();
   const uploadDir = join(store.root, "uploads");
   await mkdir(uploadDir, { recursive: true, mode: 0o700 });
@@ -46,7 +47,7 @@ export async function createApp(
   let busy = false;
   let preferencesBusy = false;
   let activeId: string | null = null;
-  const preferences = new APISettings(options.envPath ?? join(root, ".env"), store.root,
+  const preferences = new APISettings(options.envPath ?? process.env.KEYBOARDLESS_ENV_FILE ?? join(root, ".env"), store.root,
     options.secrets ?? keychainStore(process.env.KEYBOARDLESS_KEYCHAIN_HELPER ?? join(root, "macos/build/keyboardless.app/Contents/MacOS/Keychain")));
   await preferences.init();
   const models = () => preferences.models();
@@ -85,6 +86,8 @@ export async function createApp(
     dest: uploadDir,
     limits: { fileSize: 24000000, files: 1, fields: 8 },
     fileFilter: (_req, file, cb) => {
+      if (process.env.KEYBOARDLESS_AUDIO_HELPER && extname(file.originalname).toLowerCase() === ".webm")
+        return cb(new Error("請使用 WAV、MP3 或 M4A；獨立 App 不支援 WebM 匯入。"));
       if (
         ![".wav", ".mp3", ".m4a", ".webm", ".mp4"].includes(
           extname(file.originalname).toLowerCase(),
@@ -150,6 +153,8 @@ export async function createApp(
     res.json({
       app: "dex-voice-pilot",
       nativeProtocol: 1,
+      instanceID: process.env.KEYBOARDLESS_INSTANCE ?? null,
+      nativeAudio: Boolean(process.env.KEYBOARDLESS_AUDIO_HELPER),
       token,
       ...preferences.public(),
       provider: "OpenAI",
@@ -471,13 +476,20 @@ export async function createApp(
 }
 if (
   process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
 ) {
   const at = process.argv.indexOf("--port");
   const port = at >= 0 ? Number(process.argv[at + 1]) : 3018;
   if (!Number.isInteger(port) || port < 1024 || port > 65535)
     throw new Error("Invalid port");
   const { app } = await createApp({ port });
+  const parentPID = Number(process.env.KEYBOARDLESS_PARENT_PID);
+  if (Number.isInteger(parentPID) && parentPID > 1) {
+    setInterval(() => {
+      if (process.ppid !== parentPID) process.exit(0);
+      try { process.kill(parentPID, 0); } catch { process.exit(0); }
+    }, 1000).unref();
+  }
   const server = app.listen(port, "127.0.0.1", () =>
     console.log(`語音實驗室：http://127.0.0.1:${port}`),
   );

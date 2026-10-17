@@ -2,10 +2,23 @@ import AppKit
 import AVFoundation
 import ApplicationServices
 
-struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String }
+struct RuntimeConfig: Decodable {
+    let projectRoot: String?
+    let nodePath: String?
+    let mode: String?
+    var standalone: Bool { mode == "standalone" }
+    var port: Int { standalone ? 3028 : 3018 }
+    var resources: URL { Bundle.main.resourceURL! }
+    var root: URL { standalone ? resources : URL(fileURLWithPath: projectRoot!) }
+    var dataRoot: URL {
+        standalone ? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("keyboardless", isDirectory: true) : root.appendingPathComponent(".local")
+    }
+    var executable: URL { standalone ? Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/node") : URL(fileURLWithPath: nodePath!) }
+}
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, AVAudioRecorderDelegate {
     let runtime: RuntimeConfig
-    let api = PilotAPI()
+    let api: PilotAPI
+    let serviceID: String
     let hotkey = HotKey()
     let panel = StatusPanel()
     var state = CaptureState()
@@ -30,9 +43,14 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
     var operation: Task<Void, Never>?
     var stoppedAt = Date()
     var operationID = UUID()
-    var root: URL { URL(fileURLWithPath: runtime.projectRoot) }
-    var pendingDir: URL { root.appendingPathComponent(".local/mac-pending") }
-    init(runtime: RuntimeConfig) { self.runtime = runtime; super.init() }
+    var root: URL { runtime.root }
+    var pendingDir: URL { runtime.dataRoot.appendingPathComponent("mac-pending") }
+    init(runtime: RuntimeConfig) {
+        self.runtime = runtime
+        let id = UUID().uuidString; serviceID = id
+        api = PilotAPI(base: URL(string: "http://127.0.0.1:\(runtime.port)")!, expectedInstance: runtime.standalone ? id : nil)
+        super.init()
+    }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         if let id = Bundle.main.bundleIdentifier,
@@ -100,9 +118,9 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
         }
         refreshPermissions(); menuNeedsUpdate(menu)
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(sleeping), name: NSWorkspace.willSleepNotification, object: nil)
-        if !UserDefaults.standard.bool(forKey: "onboarded") {
-            settings.show(); UserDefaults.standard.set(true, forKey: "onboarded")
-        }
+        // A deliberate launch must remain visible after the first use, too.
+        settings.show(page: .home)
+        UserDefaults.standard.set(true, forKey: "onboarded")
         Task { await connect(startIfNeeded: true) }
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { refreshPermissions(); settings.show(); return true }
@@ -128,7 +146,7 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
     @objc func showSettings() { refreshPermissions(); settings.show(page: .settings) }
     @objc func showGlossary() { settings.show(page: .glossary) }
     @objc func openHistory() { settings.show(page: .history) }
-    func openLaboratory() { NSWorkspace.shared.open(URL(string: "http://127.0.0.1:3018")!) }
+    func openLaboratory() { NSWorkspace.shared.open(api.base) }
     @objc func openPending() { NSWorkspace.shared.open(pendingDir) }
     @objc func copyLast() {
         guard let text = lastText else { return }
@@ -136,17 +154,22 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
         panel.present("已複製", detail: "切換到需要的位置，按 Command＋V 貼上。", buttons: [("關閉", { [weak self] in self?.panel.orderOut(nil) })])
     }
     @objc func quit() { cancel(); diagnosticTask?.cancel(); operation?.cancel(); NSApp.terminate(nil) }
-    func applicationWillTerminate(_ notification: Notification) { recorder?.stop(); timer?.invalidate(); hotkey.captureEscape(false) }
+    func applicationWillTerminate(_ notification: Notification) { recorder?.stop(); timer?.invalidate(); hotkey.captureEscape(false); if serviceProcess?.isRunning == true { serviceProcess?.terminate() } }
     @objc func sleeping() { hotkey.reset(); diagnosticTask?.cancel(); testNextInput = false; cancel(); target = nil }
     func refreshPermissions() {
         guard settings != nil else { return }
+        let accessibilityAllowed = AXIsProcessTrusted()
+        if accessibilityAllowed && !shortcutRegistered && state.phase == .idle && !hotkey.suspended {
+            shortcutRegistered = hotkey.register(shortcut)
+        }
         let mic: String
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: mic = "麥克風已允許"
         case .denied, .restricted: mic = "麥克風未允許，請至系統設定開啟"
         default: mic = "尚未允許麥克風"
         }
-        settings.permissions.stringValue = "\(mic)\n\(AXIsProcessTrusted() ? "輔助使用已允許" : "輔助使用未允許（仍可手動複製）")\n\(shortcutRegistered ? "快捷鍵已註冊" : "快捷鍵被占用，請換一組")"
+        let shortcutStatus = shortcutRegistered ? "快捷鍵已註冊" : accessibilityAllowed ? "快捷鍵無法註冊，請換一組" : "快捷鍵尚未就緒，請允許輔助使用後重新檢查"
+        settings.permissions.stringValue = "\(mic)\n\(accessibilityAllowed ? "輔助使用已允許" : "輔助使用未允許（仍可手動複製）")\n\(shortcutStatus)"
         settings.renderStatus()
     }
     func requestMicrophone() {
@@ -179,7 +202,7 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
         } catch {
             backendReady = false
             if startIfNeeded, !(error.localizedDescription.contains("版本不相容")), serviceProcess?.isRunning != true {
-                do { try startService() } catch { settings.service.stringValue = "無法啟動服務，請雙擊 start.command 檢查。"; return }
+                do { try startService() } catch { settings.service.stringValue = "無法啟動服務，請退出後重新開啟 keyboardless。"; return }
                 for _ in 0..<30 {
                     try? await Task.sleep(nanoseconds: 500_000_000)
                     if let cfg = try? await api.config() {
@@ -192,17 +215,29 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
         }
     }
     func startService() throws {
-        let process = Process(); process.executableURL = URL(fileURLWithPath: runtime.nodePath)
+        let process = Process(); process.executableURL = runtime.executable
         // Node's getcwd can block while resolving a privacy-protected Documents ancestor.
         // Use explicit project paths; the same filesystem permissions still apply to each read.
         process.currentDirectoryURL = URL(fileURLWithPath: "/")
-        process.arguments = ["--import", root.appendingPathComponent("node_modules/tsx/dist/loader.mjs").path,
-                             root.appendingPathComponent("src/server.ts").path, "--port", "3018"]
+        process.arguments = runtime.standalone
+            ? [root.appendingPathComponent("service/server.mjs").path, "--port", String(runtime.port)]
+            : ["--import", root.appendingPathComponent("node_modules/tsx/dist/loader.mjs").path,
+               root.appendingPathComponent("src/server.ts").path, "--port", String(runtime.port)]
         var environment = ProcessInfo.processInfo.environment
-        environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:" + (environment["PATH"] ?? "")
+        if runtime.standalone {
+            environment = environment.filter { ["HOME", "TMPDIR", "USER", "LANG", "LC_CTYPE"].contains($0.key) }
+            environment["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"
+            environment["KEYBOARDLESS_DATA_ROOT"] = runtime.dataRoot.path
+            environment["KEYBOARDLESS_ENV_FILE"] = runtime.dataRoot.appendingPathComponent("unused.env").path
+            environment["KEYBOARDLESS_AUDIO_HELPER"] = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/AudioPrepare").path
+            environment["KEYBOARDLESS_INSTANCE"] = serviceID
+            environment["KEYBOARDLESS_PARENT_PID"] = String(getpid())
+        } else {
+            environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:" + (environment["PATH"] ?? "")
+        }
         environment["KEYBOARDLESS_KEYCHAIN_HELPER"] = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/Keychain").path
         process.environment = environment
-        let log = root.appendingPathComponent(".local/mac-service.log")
+        let log = runtime.dataRoot.appendingPathComponent("mac-service.log")
         if !FileManager.default.fileExists(atPath: log.path) { FileManager.default.createFile(atPath: log.path, contents: nil, attributes: [.posixPermissions: 0o600]) }
         let handle = try FileHandle(forWritingTo: log); try handle.seekToEnd()
         process.standardOutput = handle; process.standardError = handle
@@ -349,7 +384,7 @@ struct RuntimeConfig: Decodable { let projectRoot: String; let nodePath: String 
         TextTarget.diagnostic["delivery"] = delivery ?? "manual-copy"
         // Only capability/status metadata; never the dictated or focused text.
         if let data = try? JSONSerialization.data(withJSONObject: TextTarget.diagnostic, options: [.prettyPrinted, .sortedKeys]) {
-            let path = root.appendingPathComponent(".local/mac-input-diagnostics.json")
+            let path = runtime.dataRoot.appendingPathComponent("mac-input-diagnostics.json")
             try? data.write(to: path, options: .atomic)
             try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
         }

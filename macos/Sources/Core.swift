@@ -46,6 +46,25 @@ struct FocusEvidence {
     let secure: Bool
     var mayInsert: Bool { trusted && sameApp && sameElement && sameSelection && !secure }
 }
+// Chromium/Electron apps (VS Code, Chrome, Slack, Notion, Claude) answer kAXErrorNoValue
+// for the focused field, so a field-level check can never pass there. In that case the
+// guard falls back to the same app and window, with the system secure-input flag as the
+// password-field signal; it still never pastes into a different app or window.
+struct WindowEvidence {
+    let trusted: Bool
+    let sameApp: Bool
+    let sameWindow: Bool
+    let secureInput: Bool
+    var mayInsert: Bool { trusted && sameApp && sameWindow && !secureInput }
+}
+enum InsertionScope: Equatable {
+    case field, window, none
+    static func choose(field: Bool, secureField: Bool, caret: Bool, window: Bool, secureInput: Bool) -> InsertionScope {
+        if secureField { return .none }
+        if field && caret { return .field }
+        return window && !secureInput ? .window : .none
+    }
+}
 struct PilotConfig: Decodable {
     let instanceID: String?
     let app: String?

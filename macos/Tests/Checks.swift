@@ -21,6 +21,26 @@ import Foundation
             require(evidence.mayInsert == (bits == 15), "focus guard combination \(bits)")
         }
         print("PASS: capture transitions and all 32 focus guards")
+        for bits in 0..<16 {
+            let evidence = WindowEvidence(trusted: bits & 1 != 0, sameApp: bits & 2 != 0, sameWindow: bits & 4 != 0,
+                                          secureInput: bits & 8 != 0)
+            require(evidence.mayInsert == (bits == 7), "window guard combination \(bits)")
+        }
+        // Native fields expose element + caret: keep the precise field check.
+        require(InsertionScope.choose(field: true, secureField: false, caret: true, window: true, secureInput: false) == .field,
+                "native field uses field scope")
+        // Chromium/Electron (VS Code, Chrome, Slack…) report no focused field: fall back to the window.
+        require(InsertionScope.choose(field: false, secureField: false, caret: false, window: true, secureInput: false) == .window,
+                "unreadable field falls back to window scope")
+        require(InsertionScope.choose(field: true, secureField: false, caret: false, window: true, secureInput: false) == .window,
+                "field without caret falls back to window scope")
+        require(InsertionScope.choose(field: true, secureField: true, caret: true, window: true, secureInput: false) == .none,
+                "password field never inserts")
+        require(InsertionScope.choose(field: false, secureField: false, caret: false, window: true, secureInput: true) == .none,
+                "secure input blocks window fallback")
+        require(InsertionScope.choose(field: false, secureField: false, caret: false, window: false, secureInput: false) == .none,
+                "no field and no window never inserts")
+        print("PASS: 16 window guards and insertion scope fallback")
         guard CommandLine.arguments.count > 1 else { return }
         let api = PilotAPI(base: URL(string: CommandLine.arguments[1])!)
         let cfg = try await api.config(); require(cfg.configured, "configured")

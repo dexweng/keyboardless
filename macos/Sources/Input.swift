@@ -98,11 +98,11 @@ import ApplicationServices
 
 @MainActor final class TextTarget {
     static var diagnostic: [String: String] = [:]
+    private enum Anchor { case field(AXUIElement, CFRange), window(AXUIElement) }
     let pid: pid_t
-    let element: AXUIElement
-    let selection: CFRange
-    private init(pid: pid_t, element: AXUIElement, selection: CFRange) {
-        self.pid = pid; self.element = element; self.selection = selection
+    private let anchor: Anchor
+    private init(pid: pid_t, anchor: Anchor) {
+        self.pid = pid; self.anchor = anchor
     }
     private static func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
         var value: CFTypeRef?
@@ -125,29 +125,61 @@ import ApplicationServices
     private static func secure(_ element: AXUIElement) -> Bool {
         (attribute(element, kAXSubroleAttribute) as? String) == kAXSecureTextFieldSubrole
     }
+    private static func focusedWindow(pid: pid_t) -> AXUIElement? {
+        guard let value = attribute(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute),
+              CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+        return (value as! AXUIElement)
+    }
     static func capture() -> TextTarget? {
         diagnostic = ["trusted": String(AXIsProcessTrusted())]
         guard AXIsProcessTrusted(), let app = NSWorkspace.shared.frontmostApplication else { return nil }
         diagnostic["app"] = app.bundleIdentifier ?? "unknown"
         diagnostic["pid"] = String(app.processIdentifier)
-        guard app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
-              let element = focused(pid: app.processIdentifier) else { return nil }
-        diagnostic["role"] = attribute(element, kAXRoleAttribute) as? String
-        guard !secure(element), let selection = range(element) else { return nil }
-        diagnostic["captured"] = "true"
-        return TextTarget(pid: app.processIdentifier, element: element, selection: selection)
+        guard app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return nil }
+        let pid = app.processIdentifier
+        let element = focused(pid: pid)
+        diagnostic["role"] = element.flatMap { attribute($0, kAXRoleAttribute) as? String }
+        let selection = element.flatMap(range)
+        let window = focusedWindow(pid: pid)
+        let scope = InsertionScope.choose(field: element != nil, secureField: element.map(secure) ?? false,
+                                          caret: selection != nil, window: window != nil,
+                                          secureInput: IsSecureEventInputEnabled())
+        diagnostic["scope"] = "\(scope)"
+        switch scope {
+        case .field:
+            guard let element, let selection else { return nil }
+            diagnostic["captured"] = "true"
+            return TextTarget(pid: pid, anchor: .field(element, selection))
+        case .window:
+            guard let window else { return nil }
+            diagnostic["captured"] = "true"
+            return TextTarget(pid: pid, anchor: .window(window))
+        case .none:
+            return nil
+        }
     }
     func isCurrent() -> Bool {
-        let current = Self.focused(pid: pid)
-        let selectionNow = current.flatMap(Self.range)
-        Self.diagnostic["sameApp"] = String(NSWorkspace.shared.frontmostApplication?.processIdentifier == pid)
-        Self.diagnostic["sameElement"] = String(current.map { CFEqual($0, element) } ?? false)
-        Self.diagnostic["sameSelection"] = String(selectionNow.map { $0.location == selection.location && $0.length == selection.length } ?? false)
-        return FocusEvidence(trusted: AXIsProcessTrusted(),
-                             sameApp: NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
-                             sameElement: current.map { CFEqual($0, element) } ?? false,
-                             sameSelection: selectionNow.map { $0.location == selection.location && $0.length == selection.length } ?? false,
-                             secure: current.map(Self.secure) ?? true).mayInsert
+        let sameApp = NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        Self.diagnostic["sameApp"] = String(sameApp)
+        switch anchor {
+        case let .field(element, selection):
+            let current = Self.focused(pid: pid)
+            let selectionNow = current.flatMap(Self.range)
+            let sameElement = current.map { CFEqual($0, element) } ?? false
+            let sameSelection = selectionNow.map { $0.location == selection.location && $0.length == selection.length } ?? false
+            Self.diagnostic["sameElement"] = String(sameElement)
+            Self.diagnostic["sameSelection"] = String(sameSelection)
+            return FocusEvidence(trusted: AXIsProcessTrusted(), sameApp: sameApp, sameElement: sameElement,
+                                 sameSelection: sameSelection, secure: current.map(Self.secure) ?? true).mayInsert
+        case let .window(window):
+            let sameWindow = Self.focusedWindow(pid: pid).map { CFEqual($0, window) } ?? false
+            // If the app now exposes a focused field, a password field still blocks the paste.
+            let secureInput = IsSecureEventInputEnabled() || (Self.focused(pid: pid).map(Self.secure) ?? false)
+            Self.diagnostic["sameWindow"] = String(sameWindow)
+            Self.diagnostic["secureInput"] = String(secureInput)
+            return WindowEvidence(trusted: AXIsProcessTrusted(), sameApp: sameApp, sameWindow: sameWindow,
+                                  secureInput: secureInput).mayInsert
+        }
     }
     // Returns a precise status; a posted paste event is not proof the receiving app accepted it.
     func insert(_ text: String) -> String? {

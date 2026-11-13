@@ -41,6 +41,27 @@ import Foundation
         require(InsertionScope.choose(field: false, secureField: false, caret: false, window: false, secureInput: false) == .none,
                 "no field and no window never inserts")
         print("PASS: 16 window guards and insertion scope fallback")
+        require(RecordingLimit.parse("90") == 90 && RecordingLimit.parse(" 10 ") == 10 && RecordingLimit.parse("600") == 600,
+                "recording limit accepts the whole range")
+        require(RecordingLimit.parse("１２０") == 120, "recording limit accepts full-width digits")
+        for text in ["9", "601", "0", "-30", "", "abc", "90.5", "1e2"] {
+            require(RecordingLimit.parse(text) == nil, "recording limit rejects \(text)")
+        }
+        // The longest allowed recording must still fit the local service's 24 MB upload cap.
+        require(RecordingLimit.range.upperBound * 32_000 + 44 < 24_000_000, "longest recording fits the upload limit")
+        let suite = "keyboardless-checks-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        require(RecordingLimit.load(defaults) == 90, "unset recording limit keeps the 90 second default")
+        defaults.set(240, forKey: RecordingLimit.key)
+        require(RecordingLimit.load(defaults) == 240, "saved recording limit is used")
+        for stored in [5, 100_000, -1] {
+            defaults.set(stored, forKey: RecordingLimit.key)
+            require(RecordingLimit.load(defaults) == 90, "out-of-range stored limit \(stored) falls back to default")
+        }
+        require(RecordingLimit.title(45) == "45 秒" && RecordingLimit.title(120) == "2 分鐘" && RecordingLimit.title(150) == "2 分 30 秒",
+                "recording limit wording")
+        print("PASS: recording limit parsing, storage fallback and wording")
         guard CommandLine.arguments.count > 1 else { return }
         let api = PilotAPI(base: URL(string: CommandLine.arguments[1])!)
         let cfg = try await api.config(); require(cfg.configured, "configured")

@@ -22,7 +22,7 @@ macOS 語音輸入工具：自訂快捷鍵、按住或按一下切換錄音、�
 2. 在 Terminal 執行 `npm ci`、`npm run check`、`bash macos/scripts/build.sh`。
 3. 雙擊 `start-mac.command`（或執行 `bash start-mac.command`）；腳本先確認本機服務啟動，再開啟 App。
 4. 在「設定 → 語音與整理」貼入自己的 API Key，按「儲存 API 設定」與「測試已儲存設定」。金鑰存入 macOS Keychain；不要貼到 issue、聊天或 Git。
-5. 依 App 引導允許麥克風及輔助使用。預設按住 Control＋Option＋空白鍵說話，放開送出；可更改快捷鍵及錄音模式。
+5. 依 App 引導允許麥克風及輔助使用。預設按住 Control＋Option＋空白鍵說話，放開送出；可更改快捷鍵及錄音模式。單次錄音預設最長 90 秒，到達上限會自動停止並開始辨識；可在「設定 → 錄音時間上限」調整為 10–600 秒。
 
 音訊與整理文字送至 OpenAI。英文保留英文，中英混合維持原樣；模型仍可能出錯，送出重要訊息前請核對。App 不會自動按 Enter 發送。
 

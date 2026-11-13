@@ -23,6 +23,26 @@ enum RecordingMode: String, CaseIterable {
         return phase == .idle ? .begin : .stop
     }
 }
+// Longest single recording before it is stopped and sent for recognition. The ceiling keeps
+// a 16 kHz mono 16-bit WAV (32 kB per second) under the local service's 24 MB upload limit.
+enum RecordingLimit {
+    static let key = "maxRecordingSeconds"
+    static let fallback = 90
+    static let range = 10...600
+    static func parse(_ text: String) -> Int? {
+        let digits = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? ""
+        guard let value = Int(digits), range.contains(value) else { return nil }
+        return value
+    }
+    static func load(_ defaults: UserDefaults = .standard) -> Int {
+        let stored = defaults.integer(forKey: key)
+        return range.contains(stored) ? stored : fallback
+    }
+    static func title(_ seconds: Int) -> String {
+        seconds < 60 ? "\(seconds) 秒" : seconds % 60 == 0 ? "\(seconds / 60) 分鐘" : "\(seconds / 60) 分 \(seconds % 60) 秒"
+    }
+}
 struct CaptureState {
     private(set) var phase: Phase = .idle
     mutating func begin() -> Bool {

@@ -221,7 +221,7 @@ import AppKit
         modePicker.target=modeHandler;modePicker.action=#selector(PopupHandler.changed(_:))
         HubUI.full(HubUI.card([HubUI.label("全域快捷鍵", size:16,weight:.semibold),shortcutRecorder,
             HubUI.label("錄音方式",size:14,weight:.semibold),modePicker,modeStatus,
-            HubUI.label("若 Typeless 也在執行，請使用不同快捷鍵，避免同時收音。",size:12,muted:true)]),in:settingsPage)
+            HubUI.label("若其他語音輸入工具也在執行，請使用不同快捷鍵，避免同時收音。",size:12,muted:true)]),in:settingsPage)
         let savedLimit=RecordingLimit.load()
         recordingLimit.placeholderString="例如 \(RecordingLimit.fallback)";recordingLimit.setAccessibilityLabel("錄音時間上限，秒")
         recordingLimit.stringValue=String(savedLimit);recordingLimit.target=self;recordingLimit.action=#selector(saveRecordingLimit)

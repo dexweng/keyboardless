@@ -286,14 +286,16 @@ struct RuntimeConfig: Decodable {
             if UserDefaults.standard.bool(forKey: "recordingStartSound") {
                 startSound?.currentTime = 0; startSound?.play()
             }
-            panel.present("● 正在聆聽", detail: "\(recordingMode.stopHint) · Esc 取消 · 最長 90 秒", recording: true,
+            // Read once per recording: a change in settings applies from the next recording.
+            let limit = RecordingLimit.load()
+            panel.present("● 正在聆聽", detail: "\(recordingMode.stopHint) · Esc 取消 · 最長 \(RecordingLimit.title(limit))", recording: true,
                           buttons: [("取消", { [weak self] in self?.cancel() })], recordingHint:recordingMode == .toggle ? "再按停止" : nil)
             statusItem.button?.title = " ●"
             timer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
                 Task { @MainActor [weak self] in
                     guard let self, let recorder = self.recorder, self.state.phase == .recording else { return }
                     recorder.updateMeters(); self.panel.updateRecording(seconds: recorder.currentTime, level: pow(10, Double(recorder.averagePower(forChannel: 0)) / 25))
-                    if recorder.currentTime >= 90 { self.stop() }
+                    if recorder.currentTime >= Double(limit) { self.stop() }
                 }
             }
         } catch { cancel(); showError(error.localizedDescription) }

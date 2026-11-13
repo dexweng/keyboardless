@@ -2,7 +2,7 @@
 
 macOS 語音輸入工具：自訂快捷鍵、按住或按一下切換錄音、保留中英原文的文字整理、原游標貼上、歷史、詞庫及用量費用統計。使用自己的 OpenAI API Key，直接向 OpenAI 支付 API 費用。
 
-目前開發版本為 **0.6.0**，非 Typeless 官方產品。獨立 App 支援 macOS 14+、Apple Silicon 與 Intel。
+目前開發版本為 **0.7.0**，非 Typeless 官方產品。獨立 App 支援 macOS 14+、Apple Silicon 與 Intel。
 
 ## 直接安裝
 

@@ -208,7 +208,7 @@ function render(r: Run) {
       : "未知／部分";
   const texts = [
     { label: "保守整理", text: r.cleanText },
-    { label: "Typeless", text: r.baseline?.text || null },
+    { label: "對照工具", text: r.baseline?.text || null },
   ];
   if (blind && flip) texts.reverse();
   const cards = [
@@ -224,8 +224,8 @@ function render(r: Run) {
  <div class="metrics"><div class="metric"><small>語音辨識</small><b>${time(r.timings.transcribeMs)}</b></div><div class="metric"><small>文字整理</small><b>${time(r.timings.cleanupMs)}</b></div><div class="metric"><small>${r.timings.timingOrigin === "recording_stop" ? "停止錄音至結果可用" : r.timings.timingOrigin === "retry_submit" ? "重試至結果可用" : "送出至結果可用"}</small><b>${time(r.timings.endToEndMs)}</b></div><div class="metric"><small>本次估算 · USD</small><b>${cost}</b></div></div>
  <audio controls src="/api/runs/${r.id}/audio"></audio><div class="result-actions"><button id="blind" class="secondary" ${!r.baseline || !r.cleanText ? "disabled" : ""}>${blind ? "顯示產品名稱" : "隱藏名稱比較"}</button><button id="copy" class="secondary" ${!r.cleanText ? "disabled" : ""}>複製整理文字</button><button id="retryCleanup" class="secondary" ${running || !r.rawText ? "disabled" : ""}>只重做整理</button><button id="rerun" class="secondary" ${running ? "disabled" : ""}>重新辨識</button><button id="delete" class="text-button danger" ${running ? "disabled" : ""}>刪除此筆與音訊</button></div>
  <div class="compare">${cards.map((c, i) => `<article class="text-card ${i === 0 ? "muted" : ""}"><header>${esc(c.label)}</header><p class="${!c.text ? "empty" : ""}">${esc(c.text ?? "尚未測試／尚無結果")}</p></article>`).join("")}</div>
- ${r.baseline?.inputMethod !== "same_file" ? '<p class="comparison-note">Typeless 若使用重新朗讀或喇叭回放，輸入條件不同，結果只作實用性參考。</p>' : ""}
- <details><summary>加入 Typeless 實際結果</summary><div><div class="form-grid">${field("baselineText", "貼入這次 Typeless 的輸出", r.baseline?.text, true)}<label>輸入方式<select id="baselineMethod"><option value="reread">重新朗讀（不同音訊）</option><option value="speaker_replay">喇叭回放（有錄音差異）</option><option value="same_file">同一音檔直接輸入</option><option value="unknown">無法確認</option></select></label><label>Typeless 版本<input id="baselineVersion" value="${esc(r.baseline?.version || "")}" placeholder="例如 2.8.1"></label>${field("baselineSettings", "語言、詞庫、個人化設定", r.baseline?.settings, true)}</div><button id="saveBaseline" class="primary" ${running ? "disabled" : ""}>儲存基線</button></div></details>
+ ${r.baseline?.inputMethod !== "same_file" ? '<p class="comparison-note">對照工具若使用重新朗讀或喇叭回放，輸入條件不同，結果只作實用性參考。</p>' : ""}
+ <details><summary>加入對照工具的實際結果</summary><div><div class="form-grid">${field("baselineText", "貼入這次對照工具的輸出", r.baseline?.text, true)}<label>輸入方式<select id="baselineMethod"><option value="reread">重新朗讀（不同音訊）</option><option value="speaker_replay">喇叭回放（有錄音差異）</option><option value="same_file">同一音檔直接輸入</option><option value="unknown">無法確認</option></select></label><label>對照工具版本<input id="baselineVersion" value="${esc(r.baseline?.version || "")}" placeholder="例如 2.8.1"></label>${field("baselineSettings", "語言、詞庫、個人化設定", r.baseline?.settings, true)}</div><button id="saveBaseline" class="primary" ${running ? "disabled" : ""}>儲存基線</button></div></details>
  <details><summary>核對音訊與評分</summary><div><div class="form-grid">${field("reference", "人工核對的逐字稿", r.reference.verbatim, true)}${field("meaning", "必須保留的意思", r.reference.meaning || cases.find((c) => c.id === r.caseId)?.meaning || "", true)}</div><label class="inline-check"><input id="verified" type="checkbox" ${r.reference.verified ? "checked" : ""}>我已聽過音訊並核對逐字稿</label><div class="form-grid">${field("meaningErrors", "改錯原意（沒有請填「無」）", r.review?.meaningErrors)}${field("omissions", "遺漏資訊", r.review?.omissions)}${field("terms", "專有名詞錯誤", r.review?.terms)}${field("scriptIssues", "繁簡問題", r.review?.scriptIssues)}${field("tone", "語氣是否像我", r.review?.tone)}<label>使用程度<select id="usability"><option value="">請選擇</option><option value="direct">可以直接使用</option><option value="minor">需要小修</option><option value="rewrite">需要重寫</option></select></label>${field("corrected", "我修改後的版本", r.review?.corrected, true)}${field("notes", "備註與偏好（盲評時請註記 A／B）", r.review?.notes, true)}</div><button id="saveReview" class="primary" ${running ? "disabled" : ""}>儲存核對與評分</button></div></details>
  <details><summary>這次使用的設定與費用依據</summary><div><pre>${esc(JSON.stringify({ models: r.models, promptVersion: r.promptVersion, glossary: r.glossary, transcriptionSettings: r.transcriptionSettings, blindOrder: r.review?.blindOrder, audioHash: r.audioHash, parentId: r.parentId, costs: r.costs, usage: r.usage, timings: r.timings }, null, 2))}</pre></div></details>`;
   if (r.baseline)
@@ -247,7 +247,7 @@ function render(r: Run) {
       !value("baselineVersion") ||
       !value("baselineSettings")
     )
-      throw new Error("請補上 Typeless 結果、版本與設定。");
+      throw new Error("請補上對照工具的結果、版本與設定。");
     const updated = await api<Run>("/runs/" + r.id, {
       method: "PATCH",
       body: JSON.stringify({
@@ -261,7 +261,7 @@ function render(r: Run) {
       }),
     });
     render(updated);
-    notify("已儲存 Typeless 基線。");
+    notify("已儲存對照基線。");
   });
   action("saveReview", async () => {
     const value = (id: string) => $<HTMLInputElement>(id).value.trim();
@@ -288,8 +288,8 @@ function render(r: Run) {
           reviewedAt: new Date().toISOString(),
           blindOrder: blind
             ? flip
-              ? ["typeless", "candidate"]
-              : ["candidate", "typeless"]
+              ? ["baseline", "candidate"]
+              : ["candidate", "baseline"]
             : null,
         },
       }),

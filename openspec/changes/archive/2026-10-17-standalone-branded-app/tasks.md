@@ -16,4 +16,4 @@
 - App 與原始碼共 1,419 個檔案比對實際 API Key 未發現金鑰；掃描未輸出或儲存值。來源允許清單排除個人資料及私人歷史。
 - 已備份並校驗搬移既有使用資料；使用者驗收混語口述、提示音、浮動條、貼上與去白邊 logo。
 - 後續發現舊開發 App 影響啟動，已壓縮備份並取消舊版註冊。修正每次啟動顯示主視窗、權限恢復後重新註冊快捷鍵；Finder 啟動及權限就緒狀態已驗證，修正後已有新錄音完成。
-- [PR #2](https://github.com/dexweng/keyboardless/pull/2) 已合併（b501f41）；[v0.6.0](https://github.com/dexweng/keyboardless/releases/tag/v0.6.0) 已發布。公開 DMG／原始碼下載與本機已驗證檔案及 SHA-256 完全相符。
+- [PR #2](https://github.com/dexweng/keyboardless/pull/2) 已合併；[v0.6.0](https://github.com/dexweng/keyboardless/releases/tag/v0.6.0) 已發布。公開 DMG／原始碼下載與本機已驗證檔案及 SHA-256 完全相符。

@@ -57,7 +57,7 @@ export interface Run {
     corrected: string;
     notes: string;
     reviewedAt: string;
-    blindOrder?: ("candidate" | "typeless")[] | null;
+    blindOrder?: ("candidate" | "baseline")[] | null;
   } | null;
 }
 export const PROMPT_VERSION = "conservative-2-preserve-language";

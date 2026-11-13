@@ -121,7 +121,7 @@ export async function createApp(
       notes: text,
       reviewedAt: z.string().datetime(),
       blindOrder: z
-        .array(z.enum(["candidate", "typeless"]))
+        .array(z.enum(["candidate", "baseline"]))
         .length(2)
         .nullable()
         .optional(),

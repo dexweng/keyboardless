@@ -74,6 +74,8 @@ import AppKit
     private let trendRange = NSSegmentedControl(labels:["7 天","30 天"],trackingMode:.selectOne,target:nil,action:nil)
     private let typingSpeed = NSTextField()
     private let speedStatus = HubUI.label("",size:12,muted:true)
+    private let recordingLimit = NSTextField()
+    private let limitStatus = HubUI.label("",size:12,muted:true)
     private let usageRange = NSSegmentedControl(labels:["今日","本月","全部"],trackingMode:.selectOne,target:nil,action:nil)
     private let usageTotal = HubUI.label("—",size:32,weight:.semibold)
     private let usageTokens = HubUI.label("—",size:32,weight:.semibold)
@@ -220,6 +222,13 @@ import AppKit
         HubUI.full(HubUI.card([HubUI.label("全域快捷鍵", size:16,weight:.semibold),shortcutRecorder,
             HubUI.label("錄音方式",size:14,weight:.semibold),modePicker,modeStatus,
             HubUI.label("若 Typeless 也在執行，請使用不同快捷鍵，避免同時收音。",size:12,muted:true)]),in:settingsPage)
+        let savedLimit=RecordingLimit.load()
+        recordingLimit.placeholderString="例如 \(RecordingLimit.fallback)";recordingLimit.setAccessibilityLabel("錄音時間上限，秒")
+        recordingLimit.stringValue=String(savedLimit);recordingLimit.target=self;recordingLimit.action=#selector(saveRecordingLimit)
+        limitStatus.stringValue="目前上限 · \(RecordingLimit.title(savedLimit))"
+        HubUI.full(HubUI.card([HubUI.label("錄音時間上限",size:16,weight:.semibold),
+            HubUI.label("單次錄音到達這個秒數會自動停止並開始辨識。可設定 \(RecordingLimit.range.lowerBound)–\(RecordingLimit.range.upperBound) 秒，預設 \(RecordingLimit.fallback) 秒；錄得越長，辨識等待越久。",size:13,muted:true),recordingLimit,
+            ActionButton("儲存錄音上限") {[weak self] in self?.saveRecordingLimit()},limitStatus]),in:settingsPage)
         typingSpeed.placeholderString="例如 40";typingSpeed.setAccessibilityLabel("打字速度，每分鐘字數")
         let storedSpeed=UserDefaults.standard.double(forKey:"typingSpeed")
         typingSpeed.stringValue=storedSpeed>0 ? String(format:"%.0f",storedSpeed) : ""
@@ -321,6 +330,13 @@ import AppKit
     }
     @objc private func changeTrend(){renderInsights()}
     @objc private func changeUsageRange(){usageLimit=30;updateUsage()}
+    @objc private func saveRecordingLimit(){
+        guard let value=RecordingLimit.parse(recordingLimit.stringValue) else {
+            limitStatus.stringValue="請輸入 \(RecordingLimit.range.lowerBound) 到 \(RecordingLimit.range.upperBound) 之間的整數秒數；原設定未變更。";return
+        }
+        UserDefaults.standard.set(value,forKey:RecordingLimit.key);recordingLimit.stringValue=String(value)
+        limitStatus.stringValue="已儲存 · 下一次錄音起最長 \(RecordingLimit.title(value))"
+    }
     private func saveTypingSpeed(){
         let text=typingSpeed.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)
         if text.isEmpty {UserDefaults.standard.removeObject(forKey:"typingSpeed");speedStatus.stringValue="已關閉省時估算";renderInsights();return}
